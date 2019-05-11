@@ -62,6 +62,9 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor(scene.fog.color);
 
+  // Loader for textures
+  var loader = new THREE.TextureLoader();
+
   container.appendChild(renderer.domElement);
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
@@ -95,35 +98,45 @@ function init() {
 
   // ground
 
-  /*
   // needed for ground texture
   var groundTexture = loader.load( "textures/terrain/grasslight-big.jpg" );
   groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
   groundTexture.repeat.set( 25, 25 );
   groundTexture.anisotropy = 16;
-  */
+
+  var displacementTexture = loader.load( "textures/terrain/backgrounddetailed6.jpg" );
+  displacementTexture.wrapS = displacementTexture.wrapT = THREE.RepeatWrapping;
+  displacementTexture.repeat.set( 25, 25 );
+  displacementTexture.anisotropy = 16;
 
   // ground material
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
     specular: 0x404761, //0x3c3c3c//,
-    //map: groundTexture
+    map: groundTexture,
+    displacementMap: displacementTexture,
+    displacementScale: 1000
   });
 
   // ground mesh
-  let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(20000, 20000), groundMaterial);
+  let meshGeometry =new THREE.PlaneBufferGeometry(20000, 20000, 200, 200);
+  let mesh = new THREE.Mesh(meshGeometry, groundMaterial);
   mesh.position.y = GROUND_Y - 1;
   mesh.rotation.x = -Math.PI / 2;
   mesh.receiveShadow = true;
   scene.add(mesh); // add ground to scene
+  console.log(meshGeometry);
+  console.log(mesh.displacementMap);
+
+
 
   // create a box mesh
   let boxGeo = new THREE.BoxGeometry(250, 100, 250);
   boxMaterial = new THREE.MeshPhongMaterial({
     color: 0xaaaaaa,
     side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.01,
+    transparent: false,
+    opacity: 1,
   });
   box = new THREE.Mesh(boxGeo, boxMaterial);
   box.position.x = 0;
