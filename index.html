@@ -6,6 +6,7 @@
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link href="css/style.css" type="text/css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.css" type="text/css" rel="stylesheet"/>
     <style>
 			body {
 				font-family: Monospace;
@@ -50,6 +51,7 @@
 	</head>
 
 	<body>
+    <canvas id="line-chart" width="800" height="450"></canvas>
     <div id="container"></div>
 
     <script src="libjs/three.min.js"></script>
@@ -57,9 +59,12 @@
 		<script src="libjs/TrackballControls.js"></script>
 		<script src="libjs/stats.min.js"></script>
 		<script src="libjs/dat.gui.min.js"></script>
+    <script src="libjs/ImprovedNoise.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.bundle.js"></script>
 
     <script src="js/particle.js"></script>
     <script src="js/gui.js"> </script>
+    <script src="js/PerlinNoise.js"></script>
     <script src="js/main.js"> </script>
 	</body>
 </html>
