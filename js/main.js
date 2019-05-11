@@ -1,5 +1,47 @@
 window.onload = function() {
   init();
+
+  let noiseGen = new NoiseGenerator();
+  //let noiseGen = new ModPerlinGenerator(0.001, 20, 20, 3);
+  let data = [];
+  let n = 50;
+  for (var i = 0; i < n * 10; i++) {
+    let x_val = i / n;
+    data.push({x: i, y: noiseGen.generate(x_val, 0, 0)});
+  }
+  console.log(data);
+  var ctx = document.getElementById("line-chart");
+  var scatterChart = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "Scatter Dataset",
+          data: data,
+          borderColor: "orange",
+        }
+      ],
+      options: {
+        scales: {
+          xAxes: [
+            {
+              type: "linear",
+              position: "bottom"
+            }
+          ],
+          yAxes: [
+            {
+              ticks: {
+                min: 0,
+                max: 1.,
+                beginAtZero: true,
+              }
+            }
+          ]
+        }
+      }
+    }
+  });
 }
 
 function init() {
@@ -28,10 +70,6 @@ function init_scene() {
   renderer.gammaInput = true;
   renderer.gammaOutput = true;
   renderer.shadowMap.enabled = true;
-
-  // This gives us stats on how well the simulation is running
-  stats = new Stats();
-  container.appendChild(stats.domElement);
 
   // mouse controls
   controls = new THREE.TrackballControls(camera, renderer.domElement);
@@ -71,5 +109,20 @@ function init_scene() {
   sphere.receiveShadow = true;
   scene.add(sphere); // add sphere to scene
 
+  // ground material
+  var groundMaterial = new THREE.MeshPhongMaterial({
+    color: 0x404761, //0x3c3c3c,
+    specular: 0x404761, //0x3c3c3c//,
+    //map: groundTexture
+  });
+
+  // ground mesh
+  let mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(20000, 20000), groundMaterial);
+  mesh.position.y = -249 - 1;
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.receiveShadow = true;
+  scene.add(mesh); // add ground to scene
+
+  camera.lookAt(scene.position);
   renderer.render(scene, camera); // render the scene
 }

@@ -49,6 +49,55 @@ function generateParticles(n, size, texture) {
   return new THREE.Points(geometry, material);
 }
 
+function heightMapToTexture(heightMap) {
+  // create a buffer with color data
+  var width = heightMap.length;
+  var height = heightMap[0].length;
+  var data = new Uint8Array(3 * width * height);
+
+  var stride = 0;
+  for (var i = 0; i < heightMap.length; i++) {
+    for (var j = 0; j < heightMap[i].length; j++) {
+      var rgbVal = heightMap[i][j] * 255;
+      data[stride] = rgbVal;
+      data[stride + 1] = rgbVal;
+      data[stride + 2] = rgbVal;
+      stride += 3;
+    }
+  }
+
+  var texture = new THREE.DataTexture(data, width, height, THREE.RGBFormat);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function getRandomHeightMap() {
+  var width = 1000, height = 1000;
+  var size = width * height;
+  var data = new Array(width);
+  for (var i = 0; i < width; i++) {
+    data[i] = new Array(height);
+    for (var j = 0; j < height; j++) {
+      data[i][j] = Math.random();
+    }
+  }
+  return data;
+}
+
+function generateHeightMap(length, width) {
+  let noiseGen = new NoiseGenerator();
+
+  var size = length * width;
+  var data = new Array(length);
+  for (var x = 0; x < length; x++) {
+    data[x] = new Array(width);
+    for (var y = 0; y < width; y++) {
+      data[x][y] = noiseGen.generate(x, y, 0);
+    }
+  }
+  return data;
+}
+
 function init() {
 
   container = document.createElement("div");
@@ -117,19 +166,15 @@ function init() {
   //scene.background = new THREE.Color( 'skyblue' );
 
   // create a buffer with color data
-  var width = 30; height = 30;
-  var size = width * height;
-  var data = new Uint8Array( 3 * size );
 
-  for (var i = 0; i < size; i ++) {
-  	var stride = i * 3;
-  	data[ stride ] = Math.random() * 255;
-  	data[ stride + 1 ] = Math.random() * 255;
-  	data[ stride + 2 ] = Math.random() * 255;
-  }
+  let groundWidth = 500;
+  let groundHeight = 500;
+  let groundResolution = 10;
+  let groundWidthSegments = groundWidth / groundResolution;
+  let groundHeightSegments = groundHeight / groundResolution / 2;
 
-  var texture = new THREE.DataTexture( data, width, height, THREE.RGBFormat );
-  texture.needsUpdate = true
+  let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments);
+  var texture = heightMapToTexture(heightMap);
 
   // ground material
   groundMaterial = new THREE.MeshPhongMaterial({
@@ -143,7 +188,8 @@ function init() {
   console.log(displacementTexture);
 
   // ground mesh
-  let meshGeometry =new THREE.PlaneBufferGeometry(20000, 500, 100, 100);
+  let meshGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight,
+    groundWidthSegments, groundHeightSegments);
   let mesh = new THREE.Mesh(meshGeometry, groundMaterial);
   mesh.position.y = GROUND_Y - 1;
   mesh.rotation.x = -Math.PI / 2;
