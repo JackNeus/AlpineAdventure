@@ -6,25 +6,17 @@ var controls;
 var camera, scene, renderer;
 var time;
 
-var clothObject;
-var clothGeometry;
-
-var snowflakeObject;
-var snowflakeGeometry;
-var snowflakeMaterial;
-
 var groundMaterial;
+var light;
 
 // Objects in the scene
 var sphere;
 var box;
 var boundingBox;
-var cylinder;
 
 var gui;
 var guiControls;
 
-var poleMaterial, clothMaterial, sphereMaterial;
 
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
@@ -78,7 +70,6 @@ function init() {
   controls = new THREE.TrackballControls(camera, renderer.domElement);
 
   // lights (fourth thing you need is lights)
-  let light, materials;
   scene.add(new THREE.AmbientLight(0x666666));
   light = new THREE.DirectionalLight(0xdfebff, 1.75);
   light.position.set(50, 200, 100);
@@ -109,17 +100,34 @@ function init() {
   displacementTexture.repeat.set( 25, 25 );
   displacementTexture.anisotropy = 16;
 
+  // create a buffer with color data
+  var width = 50; height = 50;
+  var size = width * height;
+  var data = new Uint8Array( 3 * size );
+
+  for ( var i = 0; i < size; i ++ ) {
+  	var stride = i * 3;
+  	data[ stride ] = Math.random() * 255;
+  	data[ stride + 1 ] = Math.random() * 255;
+  	data[ stride + 2 ] = Math.random() * 255;
+  }
+
+  var texture = new THREE.DataTexture( data, width, height, THREE.RGBFormat );
+  texture.needsUpdate = true
+
   // ground material
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
     specular: 0x404761, //0x3c3c3c//,
     map: groundTexture,
-    displacementMap: displacementTexture,
-    displacementScale: 1000
+    displacementMap: texture,
+    displacementScale: 500
   });
 
+  console.log(displacementTexture);
+
   // ground mesh
-  let meshGeometry =new THREE.PlaneBufferGeometry(20000, 20000, 200, 200);
+  let meshGeometry =new THREE.PlaneBufferGeometry(20000, 20000, 100, 100);
   let mesh = new THREE.Mesh(meshGeometry, groundMaterial);
   mesh.position.y = GROUND_Y - 1;
   mesh.rotation.x = -Math.PI / 2;
@@ -163,6 +171,8 @@ function animate() {
   requestAnimationFrame(animate);
 
   time = Date.now();
+
+  //light.position.add(new THREE.Vector3(1, 1, 1));
 
   render(); // update position of cloth, compute normals, rotate camera, render the scene
   stats.update();
