@@ -19,7 +19,6 @@ var NoiseGenerator = function() {
     let noise = 0;
     // Loop of octaves
     for (var i = 0; i < this.octaves; i++) {
-      console.log(frequency, amplitude);
       noise += amplitude * this.noiseObj.noise(x*frequency, y*frequency, z*frequency);
       frequency *= this.lacunarity;
       amplitude *= this.gain;
