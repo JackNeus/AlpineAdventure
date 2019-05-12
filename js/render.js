@@ -60,18 +60,61 @@ function getRandomHeightMap() {
   return data;
 }
 
+function sigmoid(x) {
+  return Math.exp(x) / (Math.exp(x) + 1);
+}
+
 function generateHeightMap(length, width) {
   let noiseGen = new NoiseGenerator(Math.max(length, width));
 
+  let innerMaxR = Math.min(length / 2, width / 2) - 10;
+  console.log(Math.log(maxR), Math.log(.0001));
   var size = length * width;
   var data = new Array(length);
   for (var x = 0; x < length; x++) {
     data[x] = new Array(width);
     for (var y = 0; y < width; y++) {
       data[x][y] = noiseGen.generate(x, y + .01, 0);
+      let rx = Math.abs(x - length / 2);
+      let ry = Math.abs(y - width / 2);
+      let r = Math.min(maxR, Math.sqrt(rx * rx + ry * ry));
+      data[x][y] *= Math.max(0, Math.log(maxR - r)) / Math.log(maxR); 
     }
   }
   return data;
+}
+
+function ridgeify(heightMap) {
+  let width = heightMap.length;
+  let height = heightMap[0].length;
+
+  let dx = [0, 0, 1, -1];
+  let dy = [1, -1, 0, 0];
+
+  // Find local maxima.
+  let isPeak = new Array(width);
+  for (let x = 0; x < width; x++) {
+    isPeak[x] = new Array(height);
+    for (let y = 0; y < height; y++) {
+      // Don't look at edge points.
+      if (x == 0 || y == 0 || x == width - 1 || y == width - 1) continue;
+
+      isPeak[x][y] = true;
+      for (let d = 0; d < 4; d++) {
+        let nx = x + dx[d], ny = y + dy[d];
+        if (heightMap[nx][ny] > heightMap[x][y]) isPeak[x][y] = false;
+      }
+    }
+  }
+  console.log(isPeak);
+  let str = "";
+  for (let x = 0; x < width; x++) {
+    for (let y = 0; y < height; y++) {
+      str += isPeak[x][y] ? "1" : "0";
+    }
+    str += "\n";
+  }
+  console.log(str);
 }
 
 function init() {
@@ -111,7 +154,7 @@ function init() {
   controls = new THREE.TrackballControls(camera, renderer.domElement);
 
   // lights (fourth thing you need is lights)
-  scene.add(new THREE.AmbientLight(0x666666));
+  scene.add(new THREE.AmbientLight(0xffffff));
   light = new THREE.DirectionalLight(0xdfebff, 1.75);
   light.position.copy(sunPosition);
   light.castShadow = true;
@@ -130,7 +173,7 @@ function init() {
   // ground
 
   // needed for ground texture
-  var groundTexture = loader.load( "textures/terrain/grasslight-big.jpg" );
+  var groundTexture = loader.load( "textures/terrain/rockmap.jpg" );
   groundTexture.wrapS = groundTexture.wrapT = THREE.RepeatWrapping;
   groundTexture.repeat.set( 25, 25 );
   groundTexture.anisotropy = 16;
@@ -144,13 +187,14 @@ function init() {
 
   // create a buffer with color data
 
-  let groundWidth = 512;
-  let groundHeight = 512;
+  let groundWidth = 512;//512;
+  let groundHeight = 512;//512;
   let groundResolution = 4;
   let groundWidthSegments = groundWidth / groundResolution;
   let groundHeightSegments = groundHeight / groundResolution;
 
   let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments);
+  ridgeify(heightMap);
   var texture = heightMapToTexture(heightMap);
   
   // ground material
