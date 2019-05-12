@@ -81,24 +81,25 @@ function inverseDecay(x, range_size) {
 
 function generateHeightMap(length, width) {
   // Want mountains with square base.
-  let mountainWidth = Math.min(length, width);
-  let noiseGen = new NoiseGenerator(mountainWidth);
+  let noiseGen = new NoiseGenerator(Math.min(length, width));
+  let mountainWidth = length;
+  let mountainHeight = width;
 
-  let outerR = Math.sqrt(mountainWidth * mountainWidth / 2);
-  let innerR = mountainWidth / 2;
-  console.log(length, width, mountainWidth);
+  let outerR = Math.sqrt(mountainWidth * mountainWidth / 4 + mountainHeight * mountainHeight / 4);
+  let innerR = Math.min(mountainWidth, mountainHeight) / 2;
+
   let talusR = innerR - 10;
   // Base logarithmic decay halfway through talus for good rock decay.
   let logDecayR = (talusR + innerR) / 2;
   
-  var size = mountainWidth * mountainWidth;
+  var size = mountainWidth * mountainHeight;
   var data = new Array(mountainWidth);
   for (var x = 0; x < mountainWidth; x++) {
-    data[x] = new Array(mountainWidth);
-    for (var y = 0; y < mountainWidth; y++) {
+    data[x] = new Array(mountainHeight);
+    for (var y = 0; y < mountainHeight; y++) {
       data[x][y] = noiseGen.generate(x, y + .01, 0);
       let rx = Math.abs(x - mountainWidth / 2);
-      let ry = Math.abs(y - mountainWidth / 2);
+      let ry = Math.abs(y - mountainHeight / 2);
       let r = Math.sqrt(rx * rx + ry * ry);
       if (r <= talusR) { // Mountain drops off more and more.
         let r_fraction = (logDecayR - r) / logDecayR;
@@ -116,7 +117,6 @@ function generateHeightMap(length, width) {
       }
     }
   }
-
   console.log(data);
 
   // Center square mountain in rectangular height map.
@@ -125,11 +125,11 @@ function generateHeightMap(length, width) {
     padded_data[x] = new Array(width);
 
   let x_start = Math.floor((length - mountainWidth) / 2);
-  let y_start = Math.floor((width - mountainWidth) / 2);
+  let y_start = Math.floor((width - mountainHeight) / 2);
   //x_start = 0; y_start = 0;
   for (var x = 0; x < mountainWidth; x++) {  
-    for (var y = 0; y < mountainWidth; y++) {
-      padded_data[x + x_start][y + y_start] = data[y][x];
+    for (var y = 0; y < mountainHeight; y++) {
+      padded_data[x + x_start][y + y_start] = data[x][y];
     }
   }
 /*
