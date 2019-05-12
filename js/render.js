@@ -32,8 +32,8 @@ function heightMapToTexture(heightMap) {
   var data = new Uint8Array(3 * width * height);
 
   var stride = 0;
-  for (var i = 0; i < heightMap.length; i++) {
-    for (var j = 0; j < heightMap[i].length; j++) {
+  for (var j = 0; j < height; j++) {
+    for (var i = 0; i < width; i++) {
       var rgbVal = heightMap[i][j] * 255;
       data[stride] = rgbVal;
       data[stride + 1] = rgbVal;
@@ -60,28 +60,88 @@ function getRandomHeightMap() {
   return data;
 }
 
-function sigmoid(x) {
+function logDecay(x, x_max) {
+  return Math.max(0, Math.log(x_max - x)) / Math.log(x_max);
+}
+
+function sigmoidDecay(x) {
+  // Convert x from [0, 1] to [-7, 7].
+  x = -7 + 14 * x;
+  // Flip sigmoid.  
+  //x = -x;
   return Math.exp(x) / (Math.exp(x) + 1);
 }
 
-function generateHeightMap(length, width) {
-  let noiseGen = new NoiseGenerator(Math.max(length, width));
+function inverseDecay(x, range_size) {
+  // Convert x from [0, 1] to [1, 1 + range_size].
+  // We start at 1 because 1 / x = 1 at x = 1.
+  x = 1 + x * range_size; 
+  return 1 / x;
+}
 
-  let innerMaxR = Math.min(length / 2, width / 2) - 10;
-  console.log(Math.log(maxR), Math.log(.0001));
-  var size = length * width;
-  var data = new Array(length);
-  for (var x = 0; x < length; x++) {
-    data[x] = new Array(width);
-    for (var y = 0; y < width; y++) {
+function generateHeightMap(length, width) {
+  // Want mountains with square base.
+  let mountainWidth = Math.min(length, width);
+  let noiseGen = new NoiseGenerator(mountainWidth);
+
+  let outerR = Math.sqrt(mountainWidth * mountainWidth / 2);
+  let innerR = mountainWidth / 2;
+  console.log(length, width, mountainWidth);
+  let talusR = innerR - 10;
+  // Base logarithmic decay halfway through talus for good rock decay.
+  let logDecayR = (talusR + innerR) / 2;
+  
+  var size = mountainWidth * mountainWidth;
+  var data = new Array(mountainWidth);
+  for (var x = 0; x < mountainWidth; x++) {
+    data[x] = new Array(mountainWidth);
+    for (var y = 0; y < mountainWidth; y++) {
       data[x][y] = noiseGen.generate(x, y + .01, 0);
-      let rx = Math.abs(x - length / 2);
-      let ry = Math.abs(y - width / 2);
-      let r = Math.min(maxR, Math.sqrt(rx * rx + ry * ry));
-      data[x][y] *= Math.max(0, Math.log(maxR - r)) / Math.log(maxR); 
+      let rx = Math.abs(x - mountainWidth / 2);
+      let ry = Math.abs(y - mountainWidth / 2);
+      let r = Math.sqrt(rx * rx + ry * ry);
+      if (r <= talusR) { // Mountain drops off more and more.
+        let r_fraction = (logDecayR - r) / logDecayR;
+        data[x][y] *= logDecay(r, logDecayR);
+      } 
+      else if (r <= outerR) { // Beginning of talus. Slope should decrease with radius.
+        let r_fraction = (r - talusR) / (outerR - talusR);
+        let decay_factor = inverseDecay(r_fraction, 3)
+        // Compute decay factor at beginning of talus.
+        let boundary_decay_factor = logDecay(talusR, logDecayR);
+        data[x][y] *= boundary_decay_factor * decay_factor;
+      } 
+      else {
+        data[x][y] = 0;
+      }
     }
   }
-  return data;
+
+  console.log(data);
+
+  // Center square mountain in rectangular height map.
+  var padded_data = new Array(length);
+  for (var x = 0; x < padded_data.length; x++) 
+    padded_data[x] = new Array(width);
+
+  let x_start = Math.floor((length - mountainWidth) / 2);
+  let y_start = Math.floor((width - mountainWidth) / 2);
+  //x_start = 0; y_start = 0;
+  for (var x = 0; x < mountainWidth; x++) {  
+    for (var y = 0; y < mountainWidth; y++) {
+      padded_data[x + x_start][y + y_start] = data[y][x];
+    }
+  }
+/*
+  for (var x = 0; x < length; x++) {
+    for (var y = 0; y < width; y++) {
+      if (x < width) padded_data[x][y] = 1;
+      else padded_data[x][y] = 0;
+    }
+  }
+*/
+  console.log(padded_data);
+  return padded_data;
 }
 
 function ridgeify(heightMap) {
@@ -106,7 +166,7 @@ function ridgeify(heightMap) {
       }
     }
   }
-  console.log(isPeak);
+  //console.log(isPeak);
   let str = "";
   for (let x = 0; x < width; x++) {
     for (let y = 0; y < height; y++) {
@@ -114,7 +174,7 @@ function ridgeify(heightMap) {
     }
     str += "\n";
   }
-  console.log(str);
+  //console.log(str);
 }
 
 function init() {
@@ -187,7 +247,8 @@ function init() {
 
   // create a buffer with color data
 
-  let groundWidth = 512;//512;
+  // TODO: Shouldn't be two copies of the mountain for 1024x512
+  let groundWidth = 1024;//512;
   let groundHeight = 512;//512;
   let groundResolution = 4;
   let groundWidthSegments = groundWidth / groundResolution;
