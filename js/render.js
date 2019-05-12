@@ -70,14 +70,14 @@ function getRandomHeightMap() {
 }
 
 function generateHeightMap(length, width) {
-  let noiseGen = new NoiseGenerator();
+  let noiseGen = new NoiseGenerator(Math.max(length, width));
 
   var size = length * width;
   var data = new Array(length);
   for (var x = 0; x < length; x++) {
     data[x] = new Array(width);
     for (var y = 0; y < width; y++) {
-      data[x][y] = noiseGen.generate(x, y, 0);
+      data[x][y] = noiseGen.generate(x, y + .01, 0);
     }
   }
   return data;
@@ -151,15 +151,15 @@ function init() {
 
   // create a buffer with color data
 
-  let groundWidth = 500;
-  let groundHeight = 500;
-  let groundResolution = 10;
+  let groundWidth = 512;
+  let groundHeight = 512;
+  let groundResolution = 4;
   let groundWidthSegments = groundWidth / groundResolution;
-  let groundHeightSegments = groundHeight / groundResolution / 2;
+  let groundHeightSegments = groundHeight / groundResolution;
 
   let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments);
   var texture = heightMapToTexture(heightMap);
-
+  
   // ground material
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
@@ -178,6 +178,7 @@ function init() {
   mesh.position.y = GROUND_Y - 1;
   mesh.rotation.x = -Math.PI / 2;
   mesh.receiveShadow = true;
+  mesh.wireframe = true;
   scene.add(mesh); // add ground to scene
   console.log(meshGeometry);
   console.log(mesh.displacementMap);
@@ -198,7 +199,7 @@ function init() {
   box.position.z = 0;
   box.receiveShadow = true;
   box.castShadow = true;
-  scene.add(box);
+  //scene.add(box);
 
   boxGeo.computeBoundingBox();
   boundingBox = box.geometry.boundingBox.clone();
