@@ -4,32 +4,23 @@ var container;
 var stats;
 var controls;
 var camera, scene, renderer;
+var loader;
 var time;
 
 var groundMaterial;
 var light;
 
 // Objects in the scene
-var sphere;
+var sun;
 var box;
 var boundingBox;
 
 var gui;
 var guiControls;
 
-
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
-
-// Properties of the sphere in the scene
-var sphereSize = 125;
-var spherePosition = new THREE.Vector3(0, -250 + sphereSize, 0);
-var prevSpherePosition = new THREE.Vector3(0, -250 + sphereSize, 0);
-
-var cylinderSize = 100;
-var cylinderHeight = 300;
-var cylinderBottom = new THREE.Vector3(0, -250, 0);
-var cylinderTop = new THREE.Vector3(0, -250 + cylinderHeight, 0);
+var sunPosition = new THREE.Vector3(100, 0, 1500);
 
 init();
 animate();
@@ -90,11 +81,12 @@ function init() {
 
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
+  scene.fog = new THREE.Fog(0xcce0ff, 500, 20000);
+  scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
   camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-  camera.position.y = 450;
+  camera.position.y = 750;
   camera.position.z = 1500;
   scene.add(camera);
 
@@ -104,7 +96,7 @@ function init() {
   renderer.setClearColor(scene.fog.color);
 
   // Loader for textures
-  var loader = new THREE.TextureLoader();
+  loader = new THREE.TextureLoader();
 
   container.appendChild(renderer.domElement);
   renderer.gammaInput = true;
@@ -121,8 +113,7 @@ function init() {
   // lights (fourth thing you need is lights)
   scene.add(new THREE.AmbientLight(0x666666));
   light = new THREE.DirectionalLight(0xdfebff, 1.75);
-  light.position.set(50, 200, 100);
-  light.position.multiplyScalar(1.3);
+  light.position.copy(sunPosition);
   light.castShadow = true;
   light.shadow.mapSize.width = 1024;
   light.shadow.mapSize.height = 1024;
@@ -149,6 +140,8 @@ function init() {
   displacementTexture.repeat.set( 25, 25 );
   displacementTexture.anisotropy = 16;
 
+  //scene.background = new THREE.Color( 'skyblue' );
+
   // create a buffer with color data
 
   let groundWidth = 512;
@@ -164,15 +157,16 @@ function init() {
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
     specular: 0x404761, //0x3c3c3c//,
+    side: THREE.DoubleSide,
     map: groundTexture,
     displacementMap: texture,
-    displacementScale: 500
+    displacementScale: 50
   });
 
   console.log(displacementTexture);
 
   // ground mesh
-  let meshGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight, 
+  let meshGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight,
     groundWidthSegments, groundHeightSegments);
   let mesh = new THREE.Mesh(meshGeometry, groundMaterial);
   mesh.position.y = GROUND_Y - 1;
@@ -180,10 +174,36 @@ function init() {
   mesh.receiveShadow = true;
   mesh.wireframe = true;
   scene.add(mesh); // add ground to scene
-  console.log(meshGeometry);
-  console.log(mesh.displacementMap);
 
+  // ground mesh
+  let groundGeometry = new THREE.PlaneBufferGeometry(20000, 20000);
+  let ground = new THREE.Mesh(groundGeometry,
+    new THREE.MeshPhongMaterial({
+      color: 0x3030aa,
+      side: THREE.DoubleSide
+    }));
+  ground.position.y = GROUND_Y - 1;
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  //scene.add(ground); // add ground to scene
 
+  /*let sphereGeo = new THREE.SphereGeometry(2000, 20, 20);
+  // sphere material
+  sphereMaterial = new THREE.MeshPhongMaterial({
+    color: 0x000000,
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 1,
+    reflectivity: 0
+  });
+
+  let sphere = new THREE.Mesh(sphereGeo, sphereMaterial);
+  sphere.position.set(0, 0, 0);
+  scene.add(sphere);
+
+  sun = new THREE.PointLight(0xffffff, 1);
+  sun.position.copy(sunPosition);
+  scene.add(sun);*/
 
   // create a box mesh
   let boxGeo = new THREE.BoxGeometry(250, 100, 250);
@@ -219,8 +239,6 @@ function animate() {
 
   time = Date.now();
 
-  //light.position.add(new THREE.Vector3(1, 1, 1));
-
   render(); // update position of cloth, compute normals, rotate camera, render the scene
   stats.update();
   controls.update();
@@ -230,6 +248,14 @@ function animate() {
 function render() {
   let timer = Date.now() * 0.0002;
 
+  //console.log(light.position);
+  let e = new THREE.Euler(-0.01, 0, 0, 'XYZ');
+  //light.position.applyEuler(e);
+  //sun.position.applyEuler(e);
+
   camera.lookAt(scene.position);
+
+  updateParticles();
+
   renderer.render(scene, camera); // render the scene
 }
