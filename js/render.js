@@ -65,10 +65,10 @@ function logDecay(x, x_max) {
 }
 
 function sigmoidDecay(x) {
-  // Convert x from [0, 1] to [-7, 7].
-  x = -7 + 14 * x;
+  // Convert x from [0, 1] to [-7, 0] (steep part of sigmoid).
+  x = -7 + 7 * x;
   // Flip sigmoid.  
-  //x = -x;
+  x = -x;
   return Math.exp(x) / (Math.exp(x) + 1);
 }
 
@@ -79,69 +79,59 @@ function inverseDecay(x, range_size) {
   return 1 / x;
 }
 
-function generateHeightMap(length, width) {
+function generateHeightMap(width, height, mountainWidth, mountainHeight) {
   // Want mountains with square base.
-  let noiseGen = new NoiseGenerator(Math.min(length, width));
-  let mountainWidth = length;
-  let mountainHeight = width;
+  if (mountainWidth === undefined) mountainWidth = width;
+  if (mountainHeight === undefined) mountainHeight = height;
+  let noiseGen = new NoiseGenerator(Math.min(mountainWidth, mountainHeight));
 
-  let outerR = Math.sqrt(mountainWidth * mountainWidth / 4 + mountainHeight * mountainHeight / 4);
-  let innerR = Math.min(mountainWidth, mountainHeight) / 2;
+  let ellipseRadius = function(x, y) {
+    let h = width / 2, k = height / 2;
+    let a = mountainWidth / 2, b = mountainHeight / 2;
+    let r = Math.pow(x - h, 2) / Math.pow(a, 2) + Math.pow(y - k, 2) / Math.pow(b, 2); 
+    return r;
+  }
 
-  let talusR = innerR - 10;
-  // Base logarithmic decay halfway through talus for good rock decay.
-  let logDecayR = (talusR + innerR) / 2;
-  
-  var size = mountainWidth * mountainHeight;
-  var data = new Array(mountainWidth);
-  for (var x = 0; x < mountainWidth; x++) {
-    data[x] = new Array(mountainHeight);
-    for (var y = 0; y < mountainHeight; y++) {
+  let getMargin = function(x, y) {
+    return Math.min(Math.min(x, width - x) / width, Math.min(y, height - y) / height);
+  }
+
+  // Get radius of ellipse.
+  let outerR = ellipseRadius(width, height);
+  let innerR = ellipseRadius(width / 2, height / 2 + mountainHeight / 2);
+  let talusR = 0.5 * innerR;
+
+  // Base steep decay halfway through talus for good rock decay.
+  let decayR = (talusR + innerR) / 2; 
+
+  var size = width * height;
+  var data = new Array(width);
+  for (var x = 0; x < data.length; x++) {
+    data[x] = new Array(height);
+    for (var y = 0; y < data[x].length; y++) {
       data[x][y] = noiseGen.generate(x, y + .01, 0);
-      let rx = Math.abs(x - mountainWidth / 2);
-      let ry = Math.abs(y - mountainHeight / 2);
-      let r = Math.sqrt(rx * rx + ry * ry);
+      let r = ellipseRadius(x, y);
       if (r <= talusR) { // Mountain drops off more and more.
-        let r_fraction = (logDecayR - r) / logDecayR;
-        data[x][y] *= logDecay(r, logDecayR);
+        data[x][y] *= sigmoidDecay(r / decayR);
       } 
       else if (r <= outerR) { // Beginning of talus. Slope should decrease with radius.
         let r_fraction = (r - talusR) / (outerR - talusR);
-        let decay_factor = inverseDecay(r_fraction, 3)
+        let decay_factor;
+        // Decay factor should increase as we near edges of plane.
+        // This isn't as elegant as the other math, but we want to force the edges towards zero.
+        let m_fraction = 1 - getMargin(x, y) / getMargin(width / 2, height / 2 + mountainHeight / 2);
+        decay_factor = inverseDecay(r_fraction, 30 * m_fraction + 5);
+
         // Compute decay factor at beginning of talus.
-        let boundary_decay_factor = logDecay(talusR, logDecayR);
+        let boundary_decay_factor = sigmoidDecay(talusR / decayR);
         data[x][y] *= boundary_decay_factor * decay_factor;
-      } 
+      }
       else {
         data[x][y] = 0;
       }
     }
   }
-  console.log(data);
-
-  // Center square mountain in rectangular height map.
-  var padded_data = new Array(length);
-  for (var x = 0; x < padded_data.length; x++) 
-    padded_data[x] = new Array(width);
-
-  let x_start = Math.floor((length - mountainWidth) / 2);
-  let y_start = Math.floor((width - mountainHeight) / 2);
-  //x_start = 0; y_start = 0;
-  for (var x = 0; x < mountainWidth; x++) {  
-    for (var y = 0; y < mountainHeight; y++) {
-      padded_data[x + x_start][y + y_start] = data[x][y];
-    }
-  }
-/*
-  for (var x = 0; x < length; x++) {
-    for (var y = 0; y < width; y++) {
-      if (x < width) padded_data[x][y] = 1;
-      else padded_data[x][y] = 0;
-    }
-  }
-*/
-  console.log(padded_data);
-  return padded_data;
+  return data;
 }
 
 function ridgeify(heightMap) {
@@ -249,12 +239,13 @@ function init() {
 
   // TODO: Shouldn't be two copies of the mountain for 1024x512
   let groundWidth = 1024;//512;
-  let groundHeight = 512;//512;
+  let groundHeight = 1024;//512;
   let groundResolution = 4;
   let groundWidthSegments = groundWidth / groundResolution;
   let groundHeightSegments = groundHeight / groundResolution;
 
-  let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments);
+  let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments,
+    groundWidthSegments-50,groundHeightSegments/2-30);
   ridgeify(heightMap);
   var texture = heightMapToTexture(heightMap);
   
