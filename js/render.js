@@ -18,36 +18,12 @@ var boundingBox;
 var gui;
 var guiControls;
 
-var snow = false;
-
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
-var sunPosition = new THREE.Vector3(100, 400, 1500);
+var sunPosition = new THREE.Vector3(100, 0, 1500);
 
 init();
 animate();
-
-function generateParticles(n, size, texture) {
-  // Add n random points to geometry
-  var geometry = new THREE.Geometry();
-  var range = 2000;
-  for (i = 0; i < n; i++) {
-    var x = Math.random() * 2 * range - range;
-    var y = Math.random() * 2 * range - range;
-    var z = Math.random() * 2 * range - range;
-    var point = new THREE.Vector3(x, y, z);
-    geometry.vertices.push(point);
-  }
-  // Map points to texture
-  var material = new THREE.PointsMaterial({
-    size: size,
-    map: texture,
-    blending: THREE.AdditiveBlending,
-    transparent: true
-  });
-
-  return new THREE.Points(geometry, material);
-}
 
 function heightMapToTexture(heightMap) {
   // create a buffer with color data
@@ -105,11 +81,12 @@ function init() {
 
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
+  scene.fog = new THREE.Fog(0xcce0ff, 500, 20000);
+  scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
   camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-  camera.position.y = 450;
+  camera.position.y = 750;
   camera.position.z = 1500;
   scene.add(camera);
 
@@ -180,6 +157,7 @@ function init() {
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
     specular: 0x404761, //0x3c3c3c//,
+    side: THREE.DoubleSide,
     map: groundTexture,
     displacementMap: texture,
     displacementScale: 50
@@ -196,22 +174,35 @@ function init() {
   mesh.receiveShadow = true;
   scene.add(mesh); // add ground to scene
 
-  let sphereGeo = new THREE.SphereGeometry(5, 20, 20);
+  // ground mesh
+  let groundGeometry = new THREE.PlaneBufferGeometry(20000, 20000);
+  let ground = new THREE.Mesh(groundGeometry,
+    new THREE.MeshPhongMaterial({
+      color: 0x3030aa,
+      side: THREE.DoubleSide
+    }));
+  ground.position.y = GROUND_Y - 1;
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  //scene.add(ground); // add ground to scene
+
+  /*let sphereGeo = new THREE.SphereGeometry(2000, 20, 20);
   // sphere material
   sphereMaterial = new THREE.MeshPhongMaterial({
-    color: 0xffffff,
+    color: 0x000000,
     side: THREE.DoubleSide,
     transparent: true,
     opacity: 1,
+    reflectivity: 0
   });
 
+  let sphere = new THREE.Mesh(sphereGeo, sphereMaterial);
+  sphere.position.set(0, 0, 0);
+  scene.add(sphere);
 
-  // sphere mesh
-  sun = new THREE.Mesh(sphereGeo, sphereMaterial);
-  sun.castShadow = true;
-  sun.receiveShadow = false;
+  sun = new THREE.PointLight(0xffffff, 1);
   sun.position.copy(sunPosition);
-  scene.add(sun); // add sphere to scene
+  scene.add(sun);*/
 
   // create a box mesh
   let boxGeo = new THREE.BoxGeometry(250, 100, 250);
@@ -236,13 +227,6 @@ function init() {
   window.addEventListener("resize", onWindowResize, false);
 }
 
-function addSnow() {
-  var snowTexture = loader.load( "textures/snowflake.png" );
-  var snowObject = generateParticles(20000, 20, snowTexture);
-  snowObject.rotation.x = Math.random() * 6;
-  scene.add(snowObject);
-}
-
 function onWindowResize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -264,16 +248,13 @@ function render() {
   let timer = Date.now() * 0.0002;
 
   //console.log(light.position);
-  //let e = new THREE.Euler(-0.01, 0, 0, 'XYZ');
+  let e = new THREE.Euler(-0.01, 0, 0, 'XYZ');
   //light.position.applyEuler(e);
   //sun.position.applyEuler(e);
 
   camera.lookAt(scene.position);
 
-  for (i = 0; i < scene.children.length; i++) {
-    if (scene.children[i] instanceof THREE.Points) {
-      scene.children[i].rotation.y += 0.01;
-    }
-  }
+  updateParticles();
+
   renderer.render(scene, camera); // render the scene
 }
