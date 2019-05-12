@@ -3,6 +3,7 @@ var stars = false;
 var clouds = false;
 
 var snowObject;
+var accuSnowObject;
 var starObject;
 var cloudObject;
 
@@ -16,23 +17,14 @@ function generateParticles(n, material, gen_point) {
   return new THREE.Points(geometry, material);
 }
 
-var genSphere = function(radius) {
-  return function() {
-    return new THREE.Vector3(
-      Math.random() * 2 * radius - radius,
-      Math.random() * 2 * radius - radius,
-      Math.random() * 2 * radius - radius
-    );
-  };
-};
-
-var genOutsideSphere = function(minR, maxR) {
+var genSphere = function(minR, maxR, maxY) {
   return function() {
     var u = Math.random() * 2 - 1;
     var theta = Math.random() * 2 * Math.PI;
     var sq = Math.sqrt(1 - u * u);
     var vec = new THREE.Vector3(sq * Math.cos(theta), sq * Math.sin(theta), u);
-    var length = Math.random() * (maxR - minR) + minR;
+    if (maxY) vec.setY(Math.max(maxY, vec.y));
+    var length = Math.pow(Math.random(), 1/3) * (maxR - minR) + minR;
     return vec.setLength(length);
   };
 };
@@ -47,44 +39,43 @@ function addSnow() {
       transparent: true,
       depthWrite: false
     });
-    snowObject = generateParticles(20000, snowMaterial, genSphere(2000));
+    snowObject = generateParticles(20000, snowMaterial, genSphere(0, 2000, GROUND_Y));
+    accuSnowObject = generateParticles(0, snowMaterial, genSphere(0, 2000));
     scene.add(snowObject);
+    scene.add(accuSnowObject);
   }
-  else scene.remove(snowObject);
+  else {
+    scene.remove(snowObject);
+    scene.remove(accuSnowObject);
+  }
 }
 
 function addClouds() {
   if (clouds) {
     var cloudTexture = loader.load("textures/cloud.png");
     var cloudMaterial = new THREE.PointsMaterial({
-      size: 50,
+      size: 100,
       map: cloudTexture,
       blending: THREE.AdditiveBlending,
       transparent: true,
       opacity: 0.1,
       depthWrite: false
     });
-    var cloudHeight = 500;
+    var cloudHeight = 400;
     var genCloud = function(radius) {
       var getSeed = function() {
-        return new THREE.Vector3(
-          Math.random() * 2 * radius - radius,
-          Math.random() * 50 + cloudHeight,
-          Math.random() * 2 * radius - radius
-        );
+        return genSphere(0, radius)()
+              .setY(cloudHeight + Math.random() * 50);
       };
       var seed = getSeed();
       return function(i) {
         if (Math.random() > 0.99) { seed = getSeed(); }
-        var r = 30 + Math.random() * 5;
-        return new THREE.Vector3(
-          seed.x + Math.random() * r,
-          seed.y + Math.random() * r,
-          seed.z + Math.random() * r
-        );
+        var r = 40 + Math.random() * 10;
+        var d = genSphere(0, r)();
+        return d.add(seed);
       };
     }
-    cloudObject = generateParticles(20000, cloudMaterial, genCloud(1000));
+    cloudObject = generateParticles(200000, cloudMaterial, genCloud(10000));
     scene.add(cloudObject);
   }
   else scene.remove(cloudObject);
@@ -94,12 +85,12 @@ function addStars() {
   if (stars) {
     var starTexture = loader.load("textures/snowflake.png");
     var starMaterial = new THREE.PointsMaterial({
-      size: 20,
+      size: 30,
       color: 0xffffff,
       transparent: true,
       depthWrite: false
     });
-    starObject = generateParticles(20000, starMaterial, genOutsideSphere(5000, 20000));
+    starObject = generateParticles(100000, starMaterial, genSphere(5000, 10000));
     scene.add(starObject);
     scene.background = new THREE.Color(0x000000);
   }
@@ -114,12 +105,19 @@ function updateParticles() {
   if (snow) {
     //snowObject.rotation.y += 0.01;
     let particles = snowObject.geometry.vertices;
+    var length = particles.length;
+    let genFunc = genSphere(0, 2000, GROUND_Y + 1);
 
-    for (var i = 0; i < particles.length; i++) {
-      if (particles[i].y < GROUND_Y) particles[i].y = Math.random() * 2000;
+    for (var i = 0; i < length; i++) {
+      if (particles[i].y < GROUND_Y) {
+        accuSnowObject.geometry.vertices.push(particles[i].clone().setY(GROUND_Y + 1));
+        particles[i] = genFunc();
+      }
       else particles[i].add(new THREE.Vector3(0, -1, 0));
     }
+    accuSnowObject.geometry.verticesNeedUpdate = true;
     snowObject.geometry.verticesNeedUpdate = true;
+    //console.log(accuSnowObject.geometry.vertices.length);
   }
   if (stars) {
     starObject.rotation.z += 0.001;
