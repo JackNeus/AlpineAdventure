@@ -160,7 +160,7 @@ function init() {
     side: THREE.DoubleSide,
     map: groundTexture,
     displacementMap: texture,
-    displacementScale: 50
+    displacementScale: 500
   });
 
   console.log(displacementTexture);
