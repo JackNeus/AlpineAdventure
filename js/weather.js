@@ -83,6 +83,7 @@ function addClouds() {
 
 function addStars() {
   if (stars) {
+    scene.remove(starObject);
     var starTexture = loader.load("textures/snowflake.png");
     var starMaterial = new THREE.PointsMaterial({
       size: 30,

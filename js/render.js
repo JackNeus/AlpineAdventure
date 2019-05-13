@@ -12,15 +12,22 @@ var light;
 
 // Objects in the scene
 var sun;
+var sphere;
 var box;
 var boundingBox;
+var sky;
+
+var skyGeometry;
 
 var gui;
 var guiControls;
 
+var night = false;
+var sunSimulation = false;
+
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
-var sunPosition = new THREE.Vector3(100, 0, 1500);
+var sunPosition = new THREE.Vector3(0, 500, 0);
 
 init();
 animate();
@@ -140,8 +147,6 @@ function init() {
   displacementTexture.repeat.set( 25, 25 );
   displacementTexture.anisotropy = 16;
 
-  //scene.background = new THREE.Color( 'skyblue' );
-
   // create a buffer with color data
 
   let groundWidth = 512;
@@ -152,18 +157,17 @@ function init() {
 
   let heightMap = generateHeightMap(groundWidthSegments,groundHeightSegments);
   var texture = heightMapToTexture(heightMap);
-  
+
   // ground material
   groundMaterial = new THREE.MeshPhongMaterial({
     color: 0x404761, //0x3c3c3c,
-    specular: 0x404761, //0x3c3c3c//,
+    specular: 0x000000, //0x3c3c3c//,
     side: THREE.DoubleSide,
     map: groundTexture,
     displacementMap: texture,
     displacementScale: 500
   });
 
-  console.log(displacementTexture);
 
   // ground mesh
   let meshGeometry = new THREE.PlaneBufferGeometry(groundWidth, groundHeight,
@@ -180,49 +184,27 @@ function init() {
   let ground = new THREE.Mesh(groundGeometry,
     new THREE.MeshPhongMaterial({
       color: 0x3030aa,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      transparent: false
     }));
   ground.position.y = GROUND_Y - 1;
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground); // add ground to scene
 
-  /*let sphereGeo = new THREE.SphereGeometry(2000, 20, 20);
-  // sphere material
-  sphereMaterial = new THREE.MeshPhongMaterial({
-    color: 0x000000,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 1,
-    reflectivity: 0
+  skyGeometry = new THREE.SphereGeometry(7000, 32, 32);
+  let skyMaterial =  new THREE.ShaderMaterial({
+    uniforms: {
+      uSunPos: {type: 'vec3', value: sunPosition}
+    },
+    fragmentShader: skyFragmentShader(),
+    vertexShader: skyVertexShader(),
+    side: THREE.DoubleSide
   });
 
-  let sphere = new THREE.Mesh(sphereGeo, sphereMaterial);
-  sphere.position.set(0, 0, 0);
-  scene.add(sphere);
-
-  sun = new THREE.PointLight(0xffffff, 1);
-  sun.position.copy(sunPosition);
-  scene.add(sun);*/
-
-  // create a box mesh
-  let boxGeo = new THREE.BoxGeometry(250, 100, 250);
-  boxMaterial = new THREE.MeshPhongMaterial({
-    color: 0xaaaaaa,
-    side: THREE.DoubleSide,
-    transparent: false,
-    opacity: 1,
-  });
-  box = new THREE.Mesh(boxGeo, boxMaterial);
-  box.position.x = 0;
-  box.position.y = 0;
-  box.position.z = 0;
-  box.receiveShadow = true;
-  box.castShadow = true;
-  //scene.add(box);
-
-  boxGeo.computeBoundingBox();
-  boundingBox = box.geometry.boundingBox.clone();
+  sky = new THREE.Mesh(skyGeometry, skyMaterial);
+  sky.position.set(0, GROUND_Y, 0);
+  scene.add(sky);
 
   // event listeners
   window.addEventListener("resize", onWindowResize, false);
@@ -248,10 +230,25 @@ function animate() {
 function render() {
   let timer = Date.now() * 0.0002;
 
-  //console.log(light.position);
-  let e = new THREE.Euler(-0.01, 0, 0, 'XYZ');
-  //light.position.applyEuler(e);
-  //sun.position.applyEuler(e);
+  if (sunSimulation) {
+    let e = new THREE.Euler(-0.005, 0, 0, 'XYZ');
+    sunPosition.applyEuler(e);
+
+    var uniforms = sky.material.uniforms;
+    uniforms.uSunPos.value.copy(sunPosition);
+    sky.material.uniformsNeedUpdate = true;
+
+    if (sunPosition.y < (GROUND_Y + 300) && !night) {
+      stars = true;
+      addStars();
+      night = true;
+    }
+    else if (sunPosition.y > (GROUND_Y + 300) && night) {
+      stars = false;
+      addStars();
+      night = false;
+    }
+  }
 
   camera.lookAt(scene.position);
 

@@ -6,10 +6,18 @@ if (guiEnabled) {
     this.snow = snow;
     this.clouds = clouds;
     this.stars = stars;
+    this.sunSimulation = sunSimulation;
   })();
 
   // GUI elements
   gui = new dat.GUI();
+
+  let sunControl = gui
+    .add(guiControls, "sunSimulation")
+    .name("Sun Simulation")
+    .onChange(function(value) {
+      sunSimulation = value;
+    });
 
   let interactionControls = gui.addFolder("Weather");
 
