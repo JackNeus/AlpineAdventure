@@ -1,6 +1,10 @@
 // Inspired by https://thebookofshaders.com/13/
 // and by Planet 426.
 var NoiseGenerator = function(domain) {
+  return NoiseGenerator(domain, 5.);
+}
+
+var NoiseGenerator = function(domain, scale) {
   // Properties
   this.octaves = 16;
   this.lacunarity = 1.7;
@@ -8,7 +12,7 @@ var NoiseGenerator = function(domain) {
   
   // Initial values
   this.amplitude = 0.5;
-  this.frequency = 1 / (domain / 4);
+  this.frequency = 1 / (domain / scale);
 
   this.noiseObj = new ImprovedNoise();
 
