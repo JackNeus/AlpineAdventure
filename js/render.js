@@ -16,19 +16,17 @@ var sun;
 var sphere;
 var box;
 var boundingBox;
-var sky;
 
+var sky;
 var skyGeometry;
 
 var gui;
 var guiControls;
 
-var night = false;
-var sunSimulation = false;
-
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
-var sunPosition = new THREE.Vector3(0, 500, 0);
+var SUN_RADIUS = 500;
+var sunPosition = new THREE.Vector3(0, SUN_RADIUS, 0);
 
 init();
 animate();
@@ -40,6 +38,7 @@ function init() {
 
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
+
   scene.fog = new THREE.Fog(0xcce0ff, 10000, 10000);
   scene.background = scene.fog.color;
 
@@ -117,9 +116,10 @@ function init() {
   ground.position.y = GROUND_Y - 1;
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
-  //scene.add(ground); // add ground to scene
+  scene.add(ground); // add ground to scene
 
   skyGeometry = new THREE.SphereGeometry(worldRadius, 32, 32);
+
   let skyMaterial =  new THREE.ShaderMaterial({
     uniforms: {
       uSunPos: {type: 'vec3', value: sunPosition}
@@ -157,29 +157,10 @@ function animate() {
 function render() {
   let timer = Date.now() * 0.0002;
 
-  if (sunSimulation) {
-    let e = new THREE.Euler(-0.005, 0, 0, 'XYZ');
-    sunPosition.applyEuler(e);
-
-    var uniforms = sky.material.uniforms;
-    uniforms.uSunPos.value.copy(sunPosition);
-    sky.material.uniformsNeedUpdate = true;
-
-    if (sunPosition.y < (GROUND_Y + 300) && !night) {
-      stars = true;
-      addStars();
-      night = true;
-    }
-    else if (sunPosition.y > (GROUND_Y + 300) && night) {
-      stars = false;
-      addStars();
-      night = false;
-    }
-  }
-
   camera.lookAt(scene.position);
 
   updateParticles();
+  updateSunSimulation();
 
   renderer.render(scene, camera); // render the scene
 }

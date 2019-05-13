@@ -7,6 +7,8 @@ if (guiEnabled) {
     this.clouds = clouds;
     this.stars = stars;
     this.sunSimulation = sunSimulation;
+    this.sunElevation = sunAngle;
+    this.sunAzimuth = sunAzimuth;
     this.size = size;
     this.scale = scale;
     this.width = mountainWidth;
@@ -20,6 +22,24 @@ if (guiEnabled) {
     .name("Sun Simulation")
     .onChange(function(value) {
       sunSimulation = value;
+    });
+
+  let sunElevation = gui
+    .add(guiControls, "sunElevation", 0, 360)
+    .step(10)
+    .name("Elevation")
+    .onChange(function(value) {
+      sunAngle = value;
+      updateSunElevationAngle();
+    });
+
+  let sunAzimuthControl = gui
+    .add(guiControls, "sunAzimuth", 0, 360)
+    .step(10)
+    .name("Azimuth")
+    .onChange(function(value) {
+      sunAzimuth = value;
+      updateSunAzimuthAngle();
     });
 
   let interactionControls = gui.addFolder("Weather");

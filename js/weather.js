@@ -1,6 +1,10 @@
 var snow = false;
 var stars = false;
 var clouds = false;
+var night = false;
+var sunSimulation = false;
+var sunAngle = 30;
+var sunAzimuth = 180;
 
 var snowObject;
 var accuSnowObject;
@@ -91,18 +95,17 @@ function addStars() {
       transparent: true,
       depthWrite: false
     });
-    starObject = generateParticles(100000, starMaterial, genSphere(5000, 10000));
+    starObject = generateParticles(20000, starMaterial, genSphere(4000, 5000));
     scene.add(starObject);
-    scene.background = new THREE.Color(0x000000);
+    //scene.background = new THREE.Color(0x000000);
   }
   else {
     scene.remove(starObject);
-    scene.background = scene.fog.color;
+    //scene.background = scene.fog.color;
   }
 }
 
 function updateParticles() {
-  //console.log(snowObject);
   if (snow) {
     //snowObject.rotation.y += 0.01;
     let particles = snowObject.geometry.vertices;
@@ -122,5 +125,50 @@ function updateParticles() {
   }
   if (stars) {
     starObject.rotation.z += 0.001;
+  }
+}
+
+/* SUN SIMULATION */
+
+function updateSunElevationAngle() {
+  let angle = sunAngle/360 * 2 * Math.PI;
+  var x = sunPosition.x;
+  var y = SUN_RADIUS * Math.sin(angle);
+  var z = SUN_RADIUS * Math.cos(angle);
+  sunPosition.set(x, y, z);
+  var uniforms = sky.material.uniforms;
+  uniforms.uSunPos.value.set(x, y, z);
+  sky.material.uniformsNeedUpdate = true;
+}
+
+function updateSunAzimuthAngle() {
+  let angle = -sunAzimuth/360 * 2 * Math.PI;
+  var y = sunPosition.y;
+  var x = SUN_RADIUS * Math.sin(angle);
+  var z = SUN_RADIUS * Math.cos(angle);
+  sunPosition.set(x, y, z);
+  var uniforms = sky.material.uniforms;
+  uniforms.uSunPos.value.set(x, y, z);
+  sky.material.uniformsNeedUpdate = true;
+}
+
+function updateSunSimulation() {
+  if (sunSimulation) {
+    let e = new THREE.Euler(-0.001, 0, 0, 'XYZ');
+
+    var uniforms = sky.material.uniforms;
+    uniforms.uSunPos.value.applyEuler(e);
+    sky.material.uniformsNeedUpdate = true;
+  }
+
+  if (sunPosition.y < (GROUND_Y + 300) && !night) {
+    stars = true;
+    addStars();
+    night = true;
+  }
+  else if (sunPosition.y > (GROUND_Y + 300) && night) {
+    stars = false;
+    addStars();
+    night = false;
   }
 }
