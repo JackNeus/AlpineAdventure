@@ -15,19 +15,17 @@ var sun;
 var sphere;
 var box;
 var boundingBox;
-var sky;
 
+var sky;
 var skyGeometry;
 
 var gui;
 var guiControls;
 
-var night = false;
-var sunSimulation = false;
-
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
-var sunPosition = new THREE.Vector3(0, 500, 0);
+var SUN_RADIUS = 500;
+var sunPosition = new THREE.Vector3(0, SUN_RADIUS, 0);
 
 init();
 animate();
@@ -74,7 +72,7 @@ function logDecay(x, x_max) {
 function sigmoidDecay(x) {
   // Convert x from [0, 1] to [-7, 0] (steep part of sigmoid).
   x = -7 + 7 * x;
-  // Flip sigmoid.  
+  // Flip sigmoid.
   x = -x;
   return Math.exp(x) / (Math.exp(x) + 1);
 }
@@ -82,7 +80,7 @@ function sigmoidDecay(x) {
 function inverseDecay(x, range_size) {
   // Convert x from [0, 1] to [1, 1 + range_size].
   // We start at 1 because 1 / x = 1 at x = 1.
-  x = 1 + x * range_size; 
+  x = 1 + x * range_size;
   return 1 / x;
 }
 
@@ -95,7 +93,7 @@ function generateHeightMap(width, height, mountainWidth, mountainHeight) {
   let ellipseRadius = function(x, y) {
     let h = width / 2, k = height / 2;
     let a = mountainWidth / 2, b = mountainHeight / 2;
-    let r = Math.pow(x - h, 2) / Math.pow(a, 2) + Math.pow(y - k, 2) / Math.pow(b, 2); 
+    let r = Math.pow(x - h, 2) / Math.pow(a, 2) + Math.pow(y - k, 2) / Math.pow(b, 2);
     return r;
   }
 
@@ -109,7 +107,7 @@ function generateHeightMap(width, height, mountainWidth, mountainHeight) {
   let talusR = 0.5 * innerR;
 
   // Base steep decay halfway through talus for good rock decay.
-  let decayR = (talusR + innerR) / 2; 
+  let decayR = (talusR + innerR) / 2;
 
   var size = width * height;
   var data = new Array(width);
@@ -120,7 +118,7 @@ function generateHeightMap(width, height, mountainWidth, mountainHeight) {
       let r = ellipseRadius(x, y);
       if (r <= talusR) { // Mountain drops off more and more.
         data[x][y] *= sigmoidDecay(r / decayR);
-      } 
+      }
       else if (r <= outerR) { // Beginning of talus. Slope should decrease with radius.
         let r_fraction = (r - talusR) / (outerR - talusR);
         let decay_factor;
@@ -182,7 +180,7 @@ function init() {
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
-  scene.background = scene.fog.color;
+  //scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
   camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
@@ -288,7 +286,7 @@ function init() {
   ground.receiveShadow = true;
   scene.add(ground); // add ground to scene
 
-  skyGeometry = new THREE.SphereGeometry(7000, 32, 32);
+  skyGeometry = new THREE.SphereGeometry(5000, 64, 64);
   let skyMaterial =  new THREE.ShaderMaterial({
     uniforms: {
       uSunPos: {type: 'vec3', value: sunPosition}
@@ -326,29 +324,10 @@ function animate() {
 function render() {
   let timer = Date.now() * 0.0002;
 
-  if (sunSimulation) {
-    let e = new THREE.Euler(-0.005, 0, 0, 'XYZ');
-    sunPosition.applyEuler(e);
-
-    var uniforms = sky.material.uniforms;
-    uniforms.uSunPos.value.copy(sunPosition);
-    sky.material.uniformsNeedUpdate = true;
-
-    if (sunPosition.y < (GROUND_Y + 300) && !night) {
-      stars = true;
-      addStars();
-      night = true;
-    }
-    else if (sunPosition.y > (GROUND_Y + 300) && night) {
-      stars = false;
-      addStars();
-      night = false;
-    }
-  }
-
   camera.lookAt(scene.position);
 
   updateParticles();
+  updateSunSimulation();
 
   renderer.render(scene, camera); // render the scene
 }
