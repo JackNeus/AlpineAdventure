@@ -43,7 +43,7 @@ function init() {
   //scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
-  camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
+  camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000000);
   camera.position.x = -350;
   camera.position.y = 500;
   camera.position.z = 2300;
@@ -137,7 +137,7 @@ function init() {
   sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.position.set(0, GROUND_Y, 0);
   scene.add(sky);
-
+  console.log("HERE");
   console.log(sky);
 
   // event listeners
