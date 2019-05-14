@@ -44,8 +44,13 @@ function init() {
 
   // camera (Second thing you need to do is set up the camera)
   camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
-  camera.position.y = 750;
-  camera.position.z = 1500;
+  camera.position.x = -350;
+  camera.position.y = 500;
+  camera.position.z = 2300;
+  camera.rotation.x = -0.235;
+  camera.rotation.y = -0.2;
+  camera.rotation.z = -.035;
+  console.log(camera);
   scene.add(camera);
 
   // renderer (Third thing you need is a renderer)
@@ -89,6 +94,7 @@ function init() {
   // ground
 
   init_terrain();
+  mountainMesh.position.y = GROUND_Y - 30;
   scene.add(mountainMesh); // add ground to scene
 
   // needed for ground texture
@@ -110,7 +116,7 @@ function init() {
       side: THREE.DoubleSide,
       map: grassTexture,
       displacementMap: displacementTexture,
-      displacementScale: 50,
+      displacementScale: 0,
       transparent: false
     }));
   ground.position.y = GROUND_Y - 1;

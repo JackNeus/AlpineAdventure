@@ -5,6 +5,8 @@ if (guiEnabled) {
   guiControls = new (function() {
     this.snow = snow;
     this.clouds = clouds;
+    this.cloud_height = cloudHeight;
+    this.cloud_layer_width = cloudLayerWidth;
     this.stars = stars;
     this.sunSimulation = sunSimulation;
     this.sunElevation = sunAngle;
@@ -58,6 +60,28 @@ if (guiEnabled) {
       clouds = value;
       addClouds();
     });
+  interactionControls
+    .add(guiControls, "clouds")
+    .name("Clouds")
+    .onChange(function(value) {
+      clouds = value;
+      addClouds();
+    });
+  interactionControls
+    .add(guiControls, "cloud_height", 0, 600).step(50)
+    .name("Cloud Height")
+    .onChange(function(value) {
+      cloudHeight = value;
+      addClouds();
+    });
+  interactionControls
+    .add(guiControls, "cloud_layer_width", 100, 800).step(50)
+    .name("Cloud Layer")
+    .onChange(function(value) {
+      cloudLayerWidth = value;
+      addClouds();
+    });
+
   interactionControls
     .add(guiControls, "stars")
     .name("Stars")

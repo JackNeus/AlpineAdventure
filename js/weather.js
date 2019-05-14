@@ -6,6 +6,9 @@ var sunSimulation = false;
 var sunAngle = 30;
 var sunAzimuth = 180;
 
+var cloudHeight = 250;
+var cloudLayerWidth = 500;
+
 var snowObject;
 var accuSnowObject;
 var starObject;
@@ -33,6 +36,21 @@ var genSphere = function(minR, maxR, maxY) {
   };
 };
 
+var genPointInEllipsoid = function(a, b, c) {
+  let h = 0, k = 0, j = 0;
+  return function() {
+    while(true) {
+      let x = Math.random() * a * 2 - a;
+      let y = Math.random() * b * 2 - b;
+      let z = Math.random() * c * 2 - c;
+      let r = Math.pow(x - h, 2) / Math.pow(a, 2)
+        + Math.pow(y - k, 2) / Math.pow(b, 2) 
+        + Math.pow(z - j, 2) / Math.pow(c, 2);
+      if (r <= 1) return new THREE.Vector3(x, y, z);
+    }
+  };
+};
+
 function addSnow() {
   if (snow) {
     var snowTexture = loader.load( "textures/snowflake.png" );
@@ -54,35 +72,54 @@ function addSnow() {
   }
 }
 
-function addClouds() {
+function addClouds() { 
+  scene.remove(cloudObject);
   if (clouds) {
     var cloudTexture = loader.load("textures/cloud.png");
     var cloudMaterial = new THREE.PointsMaterial({
-      size: 100,
+      size: 200,
       map: cloudTexture,
       blending: THREE.AdditiveBlending,
       transparent: true,
       opacity: 0.1,
       depthWrite: false
     });
-    var cloudHeight = 400;
+
+    var cloudSphereRadius = 4500;
+    var cloudCount = 20000;
+    var baseCloudSize = 100;
+    var seeds = new Array(cloudCount);
+
+    var getSeed = function() {
+      return genSphere(0, cloudSphereRadius)()
+        .setY(cloudHeight + Math.random() * cloudLayerWidth - cloudLayerWidth / 2);
+    };
+    for (let i = 0; i < seeds.length; i++) seeds[i] = getSeed();
+
+    var seedNum = 0;
+    var particlesInLastCloud = 0;
+    var lastCloudSize = baseCloudSize;
+    var calls = 0;
     var genCloud = function(radius) {
-      var getSeed = function() {
-        return genSphere(0, radius)()
-              .setY(cloudHeight + Math.random() * 50);
-      };
-      var seed = getSeed();
       return function(i) {
-        if (Math.random() > 0.99) { seed = getSeed(); }
-        var r = 40 + Math.random() * 10;
-        var d = genSphere(0, r)();
-        return d.add(seed);
+        if (particlesInLastCloud == lastCloudSize) {
+          seedNum += 1;
+          particlesInLastCloud = 0;
+          lastCloudSize = Math.ceil(baseCloudSize * Math.random() * 2);
+        }
+        //if (Math.random() > 0.99) { seed = getSeed(); }
+        var rx = (80 + Math.random() * 40);// * lastCloudSize / baseCloudSize;
+        var ry = (40 + Math.random() * 10);// * lastCloudSize / baseCloudSize;
+        var rz = (80 + Math.random() * 40);// * lastCloudSize / baseCloudSize;
+        var d = genPointInEllipsoid(rx, ry, rz)();
+
+        particlesInLastCloud += 1;
+        return d.add(seeds[seedNum]);
       };
     }
-    cloudObject = generateParticles(200000, cloudMaterial, genCloud(10000));
+    cloudObject = generateParticles(cloudCount, cloudMaterial, genCloud(cloudSphereRadius));
     scene.add(cloudObject);
   }
-  else scene.remove(cloudObject);
 }
 
 function addStars() {
@@ -115,7 +152,7 @@ function updateParticles() {
     for (var i = 0; i < length; i++) {
       if (particles[i].y < GROUND_Y) {
         accuSnowObject.geometry.vertices.push(particles[i].clone().setY(GROUND_Y + 1));
-        particles[i] = genFunc();
+        //particles[i] = genFunc();
       }
       else particles[i].add(new THREE.Vector3(0, -1, 0));
     }
