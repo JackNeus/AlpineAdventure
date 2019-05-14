@@ -11,6 +11,7 @@ if (guiEnabled) {
     this.sunSimulation = sunSimulation;
     this.sunElevation = sunAngle;
     this.sunAzimuth = sunAzimuth;
+    this.cloudBackground = cloudBackground;
     this.size = size;
     this.scale = scale;
     this.width = mountainWidth;
@@ -24,6 +25,14 @@ if (guiEnabled) {
     .name("Sun Simulation")
     .onChange(function(value) {
       sunSimulation = value;
+    });
+
+  let cloudSkyControl = gui
+    .add(guiControls, "cloudBackground")
+    .name("Cloud Background")
+    .onChange(function(value) {
+      cloudBackground = value;
+      addCloudBackground();
     });
 
   let sunElevation = gui
@@ -97,7 +106,7 @@ if (guiEnabled) {
     .name("size")
     .onChange(function(value) {
       update_terrain_size(value);
-    });  
+    });
 
   terrainControls
     .add(guiControls, "scale", 0, 10).step(1)

@@ -26,6 +26,7 @@ var guiControls;
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
 var SUN_RADIUS = 500;
+var SKY_RADIUS = 10000;
 var sunPosition = new THREE.Vector3(0, SUN_RADIUS, 0);
 
 init();
@@ -38,9 +39,8 @@ function init() {
 
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
-
-  scene.fog = new THREE.Fog(0xcce0ff, 10000, 10000);
-  scene.background = scene.fog.color;
+  //scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
+  //scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
   camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
@@ -50,13 +50,12 @@ function init() {
   camera.rotation.x = -0.235;
   camera.rotation.y = -0.2;
   camera.rotation.z = -.035;
-  console.log(camera);
   scene.add(camera);
 
   // renderer (Third thing you need is a renderer)
   renderer = new THREE.WebGLRenderer({ antialias: true, devicePixelRatio: 1 });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(scene.fog.color);
+  //renderer.setClearColor(scene.fog.color);
 
   // Loader for textures
   loader = new THREE.TextureLoader();
@@ -72,10 +71,10 @@ function init() {
 
   // mouse controls
   controls = new THREE.TrackballControls(camera, renderer.domElement);
-  controls.maxDistance = 3000;
+  controls.maxDistance = 6000;
 
   // lights (fourth thing you need is lights)
-  scene.add(new THREE.AmbientLight(0xffffff));
+  scene.add(new THREE.AmbientLight(0x404040, 0.2));
   light = new THREE.DirectionalLight(0xdfebff, 1.75);
   light.position.copy(sunPosition);
   light.castShadow = true;
@@ -124,20 +123,22 @@ function init() {
   ground.receiveShadow = true;
   scene.add(ground); // add ground to scene
 
-  skyGeometry = new THREE.SphereGeometry(worldRadius, 32, 32);
-
+  skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 64, 64);
   let skyMaterial =  new THREE.ShaderMaterial({
     uniforms: {
       uSunPos: {type: 'vec3', value: sunPosition}
     },
     fragmentShader: skyFragmentShader(),
     vertexShader: skyVertexShader(),
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    depthWrite: false
   });
 
   sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.position.set(0, GROUND_Y, 0);
   scene.add(sky);
+
+  console.log(sky);
 
   // event listeners
   window.addEventListener("resize", onWindowResize, false);
