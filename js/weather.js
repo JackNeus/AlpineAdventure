@@ -2,6 +2,7 @@ var snow = false;
 var stars = false;
 var clouds = false;
 var night = false;
+var cloudBackground = false;
 var sunSimulation = false;
 var sunAngle = 30;
 var sunAzimuth = 180;
@@ -128,6 +129,16 @@ function updateParticles() {
 
 /* SUN SIMULATION */
 
+function addCloudBackground() {
+  if (cloudBackground) {
+    sky.material.fragmentShader = cloudShader();
+  }
+  else {
+    sky.material.fragmentShader = skyFragmentShader();
+  }
+  sky.material.needsUpdate = true;
+}
+
 function updateSunElevationAngle() {
   let angle = sunAngle/360 * 2 * Math.PI;
   var x = sunPosition.x;
@@ -177,7 +188,5 @@ function updateSunSimulation() {
     night = false
     sky.material.opacity = 1;
     sky.material.needsUpdate = true;
-    //sky.material.fragmentShader = skyFragmentShader();
-    //sky.material.needsUpdate = true;
   }
 }
