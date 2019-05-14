@@ -90,18 +90,16 @@ function addStars() {
     scene.remove(starObject);
     var starTexture = loader.load("textures/snowflake.png");
     var starMaterial = new THREE.PointsMaterial({
-      size: 30,
+      size: 50,
       color: 0xffffff,
       transparent: true,
       depthWrite: false
     });
-    starObject = generateParticles(20000, starMaterial, genSphere(4000, 5000));
+    starObject = generateParticles(20000, starMaterial, genSphere(SKY_RADIUS, SKY_RADIUS * 2));
     scene.add(starObject);
-    //scene.background = new THREE.Color(0x000000);
   }
   else {
     scene.remove(starObject);
-    //scene.background = scene.fog.color;
   }
 }
 
@@ -136,6 +134,7 @@ function updateSunElevationAngle() {
   var y = SUN_RADIUS * Math.sin(angle);
   var z = SUN_RADIUS * Math.cos(angle);
   sunPosition.set(x, y, z);
+  light.position.set(x, y, z);
   var uniforms = sky.material.uniforms;
   uniforms.uSunPos.value.set(x, y, z);
   sky.material.uniformsNeedUpdate = true;
@@ -147,6 +146,7 @@ function updateSunAzimuthAngle() {
   var x = SUN_RADIUS * Math.sin(angle);
   var z = SUN_RADIUS * Math.cos(angle);
   sunPosition.set(x, y, z);
+  light.position.set(x, y, z);
   var uniforms = sky.material.uniforms;
   uniforms.uSunPos.value.set(x, y, z);
   sky.material.uniformsNeedUpdate = true;
@@ -155,20 +155,29 @@ function updateSunAzimuthAngle() {
 function updateSunSimulation() {
   if (sunSimulation) {
     let e = new THREE.Euler(-0.001, 0, 0, 'XYZ');
+    sunAngle += -0.001 * 360/ (2 * Math.PI);
+    sunPosition.applyEuler(e);
 
     var uniforms = sky.material.uniforms;
-    uniforms.uSunPos.value.applyEuler(e);
+    uniforms.uSunPos.value.copy(sunPosition);
     sky.material.uniformsNeedUpdate = true;
+    light.position.copy(sunPosition);
   }
 
   if (sunPosition.y < (GROUND_Y + 300) && !night) {
     stars = true;
     addStars();
     night = true;
+    sky.material.opacity = 0.1;
+    sky.material.needsUpdate = true;
   }
   else if (sunPosition.y > (GROUND_Y + 300) && night) {
     stars = false;
     addStars();
-    night = false;
+    night = false
+    sky.material.opacity = 1;
+    sky.material.needsUpdate = true;
+    //sky.material.fragmentShader = skyFragmentShader();
+    //sky.material.needsUpdate = true;
   }
 }

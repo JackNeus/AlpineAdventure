@@ -25,6 +25,7 @@ var guiControls;
 // Property of the ground floor in the scene
 var GROUND_Y = -249;
 var SUN_RADIUS = 500;
+var SKY_RADIUS = 10000;
 var sunPosition = new THREE.Vector3(0, SUN_RADIUS, 0);
 
 init();
@@ -179,11 +180,11 @@ function init() {
 
   // scene (First thing you need to do is set up a scene)
   scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
+  //scene.fog = new THREE.Fog(0xcce0ff, 500, 10000);
   //scene.background = scene.fog.color;
 
   // camera (Second thing you need to do is set up the camera)
-  camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 10000);
+  camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1000000);
   camera.position.y = 750;
   camera.position.z = 1500;
   scene.add(camera);
@@ -191,7 +192,7 @@ function init() {
   // renderer (Third thing you need is a renderer)
   renderer = new THREE.WebGLRenderer({ antialias: true, devicePixelRatio: 1 });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(scene.fog.color);
+  //renderer.setClearColor(scene.fog.color);
 
   // Loader for textures
   loader = new THREE.TextureLoader();
@@ -209,7 +210,7 @@ function init() {
   controls = new THREE.TrackballControls(camera, renderer.domElement);
 
   // lights (fourth thing you need is lights)
-  scene.add(new THREE.AmbientLight(0xffffff));
+  scene.add(new THREE.AmbientLight(0x404040, 0.2));
   light = new THREE.DirectionalLight(0xdfebff, 1.75);
   light.position.copy(sunPosition);
   light.castShadow = true;
@@ -286,19 +287,22 @@ function init() {
   ground.receiveShadow = true;
   scene.add(ground); // add ground to scene
 
-  skyGeometry = new THREE.SphereGeometry(5000, 64, 64);
+  skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 64, 64);
   let skyMaterial =  new THREE.ShaderMaterial({
     uniforms: {
       uSunPos: {type: 'vec3', value: sunPosition}
     },
     fragmentShader: skyFragmentShader(),
     vertexShader: skyVertexShader(),
-    side: THREE.DoubleSide
+    side: THREE.DoubleSide,
+    depthWrite: false
   });
 
   sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.position.set(0, GROUND_Y, 0);
   scene.add(sky);
+
+  console.log(sky);
 
   // event listeners
   window.addEventListener("resize", onWindowResize, false);
