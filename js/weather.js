@@ -151,12 +151,12 @@ function updateParticles() {
     for (var i = 0; i < length; i++) {
       if (particles[i].y < GROUND_Y) {
         accuSnowObject.geometry.vertices.push(particles[i].clone().setY(GROUND_Y + 1));
-        //particles[i] = genFunc();
+        particles[i] = genFunc();
       }
       else particles[i].add(new THREE.Vector3(0, -1, 0));
     }
-    accuSnowObject.geometry.verticesNeedUpdate = true;
     snowObject.geometry.verticesNeedUpdate = true;
+    accuSnowObject.geometry.verticesNeedUpdate = true;
     //console.log(accuSnowObject.geometry.vertices.length);
   }
   if (stars) {

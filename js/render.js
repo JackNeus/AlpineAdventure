@@ -71,7 +71,7 @@ function init() {
 
   // mouse controls
   controls = new THREE.TrackballControls(camera, renderer.domElement);
-  controls.maxDistance = 6000;
+  controls.maxDistance = 3000;
 
   // lights (fourth thing you need is lights)
   scene.add(new THREE.AmbientLight(0x404040, 0.2));

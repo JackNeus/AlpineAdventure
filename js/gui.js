@@ -70,13 +70,6 @@ if (guiEnabled) {
       addClouds();
     });
   interactionControls
-    .add(guiControls, "clouds")
-    .name("Clouds")
-    .onChange(function(value) {
-      clouds = value;
-      addClouds();
-    });
-  interactionControls
     .add(guiControls, "cloud_height", 0, 600).step(50)
     .name("Cloud Height")
     .onChange(function(value) {
